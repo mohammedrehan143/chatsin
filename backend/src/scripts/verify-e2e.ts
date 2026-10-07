@@ -74,15 +74,35 @@ async function runVerification() {
     }
     console.log('[PASS] 4. Mobile number login verification passed with valid JWT token issuance');
 
-    // 5. User Search by Mobile Number (Alice searches for Bob via his phone)
-    const searchRes = await fetch(`${BASE_URL}/api/users?q=${encodeURIComponent(bobPhone)}`, {
+    // 5a. See all contacts saved in the database (no query filter)
+    const allContactsRes = await fetch(`${BASE_URL}/api/users`, {
       headers: { Authorization: `Bearer ${aliceToken}` },
     });
-    const searchData = await searchRes.json();
-    if (!searchData.success || !searchData.data.some((u: any) => u.id === bobUser.id)) {
+    const allContactsData = await allContactsRes.json();
+    if (!allContactsData.success || !Array.isArray(allContactsData.data) || allContactsData.data.length === 0) {
+      throw new Error('Failed to retrieve contacts from database');
+    }
+    console.log(`[PASS] 5a. Retrieved all database contacts successfully (${allContactsData.data.length} found)`);
+
+    // 5b. Search by person's name (Alice searches for Bob by username/name)
+    const searchByNameRes = await fetch(`${BASE_URL}/api/users?q=${encodeURIComponent(bobUsername)}`, {
+      headers: { Authorization: `Bearer ${aliceToken}` },
+    });
+    const searchByNameData = await searchByNameRes.json();
+    if (!searchByNameData.success || !searchByNameData.data.some((u: any) => u.username === bobUsername)) {
+      throw new Error(`Search by name failed to locate user with username: ${bobUsername}`);
+    }
+    console.log(`[PASS] 5b. Search by person's name located "${bobUsername}" successfully`);
+
+    // 5c. Search by mobile number (Alice searches for Bob via his phone number)
+    const searchByPhoneRes = await fetch(`${BASE_URL}/api/users?q=${encodeURIComponent(bobPhone)}`, {
+      headers: { Authorization: `Bearer ${aliceToken}` },
+    });
+    const searchByPhoneData = await searchByPhoneRes.json();
+    if (!searchByPhoneData.success || !searchByPhoneData.data.some((u: any) => u.id === bobUser.id)) {
       throw new Error('User search failed to find Bob by phone number');
     }
-    console.log('[PASS] 5. User search endpoint successfully located target user by mobile number');
+    console.log('[PASS] 5c. User search endpoint successfully located target user by mobile number');
 
     // 6. Create Direct Conversation between Alice and Bob
     const convRes = await fetch(`${BASE_URL}/api/conversations`, {

@@ -15,6 +15,18 @@ interface SidebarProps {
 export function Sidebar({ onOpenSearch, onOpenProfile }: SidebarProps) {
   const { user, logout } = useAuth();
   const { conversations, activeConversation, selectConversation, loadingConversations } = useChat();
+  const [filterQuery, setFilterQuery] = React.useState('');
+
+  const filteredConversations = React.useMemo(() => {
+    if (!filterQuery.trim()) return conversations;
+    const q = filterQuery.toLowerCase().trim();
+    return conversations.filter(
+      (c) =>
+        (c.participant?.username && c.participant.username.toLowerCase().includes(q)) ||
+        (c.participant?.phoneNumber && c.participant.phoneNumber.includes(q)) ||
+        (c.lastMessage?.content && c.lastMessage.content.toLowerCase().includes(q))
+    );
+  }, [conversations, filterQuery]);
 
   return (
     <aside className="w-full md:w-80 lg:w-[410px] flex flex-col h-full bg-white border-r border-[#e9edef] text-[#111b21] select-none">
@@ -42,7 +54,7 @@ export function Sidebar({ onOpenSearch, onOpenProfile }: SidebarProps) {
         <div className="flex items-center gap-1 text-[#54656f]">
           <button
             onClick={onOpenSearch}
-            title="New Chat"
+            title="Contacts / New Chat"
             className="p-2 hover:bg-[#e9edef] rounded-full transition-colors"
           >
             <Plus className="w-5 h-5 text-[#54656f] hover:text-[#00a884]" />
@@ -61,13 +73,31 @@ export function Sidebar({ onOpenSearch, onOpenProfile }: SidebarProps) {
       <div className="p-2 bg-white border-b border-[#e9edef]">
         <div className="relative flex items-center">
           <Search className="w-4 h-4 text-[#54656f] absolute left-3 pointer-events-none" />
+          <input
+            type="text"
+            value={filterQuery}
+            onChange={(e) => setFilterQuery(e.target.value)}
+            placeholder="Search chats or search contacts..."
+            className="w-full bg-[#f0f2f5] focus:bg-white border border-transparent focus:border-[#00a884] rounded-lg pl-9 pr-8 py-1.5 text-xs text-[#111b21] placeholder-[#54656f] outline-none transition-all shadow-xs"
+          />
+          {filterQuery && (
+            <button
+              onClick={() => setFilterQuery('')}
+              className="absolute right-2.5 text-xs text-[#54656f] hover:text-[#111b21]"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        {filterQuery && (
           <button
             onClick={onOpenSearch}
-            className="w-full text-left bg-[#f0f2f5] hover:bg-[#e9edef] rounded-lg pl-10 pr-4 py-1.5 text-xs text-[#54656f] transition-colors flex items-center justify-between"
+            className="mt-1.5 w-full text-left px-2 py-1 bg-[#e7fce9] hover:bg-[#d9fdd3] rounded text-[11px] text-[#00a884] font-medium transition-colors flex items-center justify-between"
           >
-            <span>Search or start new chat</span>
+            <span>Search &ldquo;{filterQuery}&rdquo; in database contacts</span>
+            <span className="text-[10px] uppercase font-bold">Open →</span>
           </button>
-        </div>
+        )}
       </div>
 
       {/* WhatsApp Chat List */}
@@ -77,24 +107,28 @@ export function Sidebar({ onOpenSearch, onOpenProfile }: SidebarProps) {
             <div className="w-6 h-6 border-2 border-[#00a884] border-t-transparent rounded-full animate-spin" />
             <span>Loading chats...</span>
           </div>
-        ) : conversations.length === 0 ? (
+        ) : filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
             <div className="w-14 h-14 bg-[#f0f2f5] rounded-full flex items-center justify-center mb-3 text-[#00a884]">
               <MessageSquare className="w-7 h-7" />
             </div>
-            <p className="text-sm font-semibold text-[#111b21]">No chats yet</p>
+            <p className="text-sm font-semibold text-[#111b21]">
+              {filterQuery ? 'No matching chat found' : 'No chats yet'}
+            </p>
             <p className="text-xs text-[#667781] mt-1 mb-5">
-              Start chatting by searching for contacts using their mobile number or username.
+              {filterQuery
+                ? `Search all database contacts for "${filterQuery}"`
+                : 'Start chatting by finding contacts in the database.'}
             </p>
             <button
               onClick={onOpenSearch}
               className="px-4 py-2 bg-[#00a884] hover:bg-[#008069] text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
             >
-              Start New Chat
+              {filterQuery ? 'Search Database Contacts' : 'View Contacts & Start Chat'}
             </button>
           </div>
         ) : (
-          conversations.map((conv) => {
+          filteredConversations.map((conv) => {
             const isActive = activeConversation?.id === conv.id;
             const partner = conv.participant;
             const isOnline = partner?.isOnline;
