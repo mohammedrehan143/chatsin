@@ -27,3 +27,8 @@ lerna-debug.log*
 # System files
 .DS_Store
 Thumbs.db
+settings.json
+mcp_config.json
+mcp.json
+.agents/
+.gemini/
