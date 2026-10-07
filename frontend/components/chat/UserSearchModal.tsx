@@ -88,40 +88,48 @@ export function UserSearchModal({ isOpen, onClose }: UserSearchModalProps) {
           {loading ? (
             <div className="py-12 flex items-center justify-center text-[#667781] text-xs gap-2">
               <div className="w-5 h-5 border-2 border-[#00a884] border-t-transparent rounded-full animate-spin" />
-              <span>Searching contacts...</span>
+              <span>Searching database contacts...</span>
             </div>
           ) : results.length === 0 ? (
-            <div className="py-12 text-center text-[#667781] text-xs">
-              {query ? 'No contacts found with that number or name' : 'Type a mobile number or name to search'}
+            <div className="py-12 px-6 text-center text-[#667781] text-xs">
+              {query
+                ? `No contact found matching "${query}"`
+                : 'No other contacts in database yet. Register another user to start chatting!'}
             </div>
           ) : (
-            results.map((u) => (
-              <div
-                key={u.id}
-                onClick={() => handleSelectUser(u)}
-                className="px-4 py-3 flex items-center justify-between hover:bg-[#f5f6f6] cursor-pointer transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Avatar src={u.avatarUrl} alt={u.username} size="md" />
-                    {u.isOnline && (
-                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-white bg-[#25d366]" />
-                    )}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-[#111b21]">{u.username}</h4>
-                    <p className="text-xs text-[#667781] flex items-center gap-1 mt-0.5">
-                      <Phone className="w-3 h-3 text-[#00a884]" />
-                      <span>{u.phoneNumber || u.email}</span>
-                    </p>
-                  </div>
-                </div>
-
-                <span className="text-xs font-medium text-[#00a884] hover:underline">
-                  Chat
-                </span>
+            <div>
+              <div className="px-4 py-2 bg-[#f8f9fa] border-b border-[#f0f2f5] text-[11px] font-semibold text-[#667781] tracking-wider uppercase flex justify-between items-center">
+                <span>{query ? 'Search Results' : 'Contacts in Database'}</span>
+                <span className="text-[#00a884]">{results.length} available</span>
               </div>
-            ))
+              {results.map((u) => (
+                <div
+                  key={u.id}
+                  onClick={() => handleSelectUser(u)}
+                  className="px-4 py-3 flex items-center justify-between hover:bg-[#f5f6f6] cursor-pointer transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Avatar src={u.avatarUrl} alt={u.username} size="md" />
+                      {u.isOnline && (
+                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-white bg-[#25d366]" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-[#111b21]">{u.username}</h4>
+                      <p className="text-xs text-[#667781] flex items-center gap-1 mt-0.5">
+                        <Phone className="w-3 h-3 text-[#00a884]" />
+                        <span>{u.phoneNumber || u.email}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="text-xs font-medium text-[#00a884] bg-[#e7fce9] px-2.5 py-1 rounded-full hover:bg-[#00a884] hover:text-white transition-colors">
+                    Chat
+                  </span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>

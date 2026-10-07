@@ -41,10 +41,9 @@ export function createApp(): { app: Express; server: http.Server } {
 
   // Health check endpoint
   app.get('/health', (req, res) => {
-    res.json({
+    res.status(200).json({
       status: 'ok',
-      service: 'chat-app-backend',
-      timestamp: new Date().toISOString()
+      message: 'Backend is running'
     });
   });
 

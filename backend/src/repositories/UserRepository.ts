@@ -143,26 +143,35 @@ export class UserRepository implements IUserRepository {
     return updatedUser;
   }
 
-  async search(query: string, excludeUserId?: string, limit = 20): Promise<User[]> {
+  async search(query: string, excludeUserId?: string, limit = 50): Promise<User[]> {
     const q = query.toLowerCase().trim();
     const digitsOnly = query.replace(/[^0-9]/g, '');
 
     if (isDatabaseConnected()) {
       try {
+        const whereClause: any = {};
+        if (excludeUserId) {
+          whereClause.id = { not: excludeUserId };
+        }
+
+        if (q) {
+          const orConditions: any[] = [
+            { username: { contains: q, mode: 'insensitive' } },
+            { email: { contains: q, mode: 'insensitive' } }
+          ];
+          if (digitsOnly) {
+            orConditions.push({ phoneNumber: { contains: digitsOnly } });
+          }
+          if (q.length > 2) {
+            orConditions.push({ phoneNumber: { contains: q } });
+          }
+          whereClause.OR = orConditions;
+        }
+
         const users = await getPrismaClient().user.findMany({
-          where: {
-            AND: [
-              excludeUserId ? { id: { not: excludeUserId } } : {},
-              {
-                OR: [
-                  { username: { contains: q, mode: 'insensitive' } },
-                  { email: { contains: q, mode: 'insensitive' } },
-                  digitsOnly ? { phoneNumber: { contains: digitsOnly } } : {}
-                ]
-              }
-            ]
-          },
-          take: limit
+          where: whereClause,
+          take: limit,
+          orderBy: { createdAt: 'desc' }
         });
         return users.map(u => {
           const { passwordHash, ...rest } = u;
@@ -176,9 +185,15 @@ export class UserRepository implements IUserRepository {
     const results: User[] = [];
     for (const u of memoryStore.users.values()) {
       if (excludeUserId && u.id === excludeUserId) continue;
+      if (!q) {
+        const { passwordHash, ...safeUser } = u;
+        results.push(safeUser as User);
+        if (results.length >= limit) break;
+        continue;
+      }
       const matchUsername = u.username.toLowerCase().includes(q);
       const matchEmail = u.email && u.email.toLowerCase().includes(q);
-      const matchPhone = digitsOnly && u.phoneNumber && u.phoneNumber.includes(digitsOnly);
+      const matchPhone = (digitsOnly && u.phoneNumber && u.phoneNumber.includes(digitsOnly)) || (u.phoneNumber && u.phoneNumber.toLowerCase().includes(q));
 
       if (matchUsername || matchEmail || matchPhone) {
         const { passwordHash, ...safeUser } = u;
