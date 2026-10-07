@@ -15,8 +15,9 @@ export const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '30d'
   },
   valkey: {
+    uri: process.env.VALKEY_URI || '',
     host: process.env.VALKEY_HOST || 'localhost',
-    port: parseInt(process.env.VALKEY_PORT || '6379', 10),
+    port: parseInt((process.env.VALKEY_PORT?.match(/:?(\d+)$/)?.[1] || process.env.VALKEY_PORT || '6379'), 10),
     username: process.env.VALKEY_USERNAME || 'default',
     password: process.env.VALKEY_PASSWORD || ''
   },
