@@ -5,8 +5,8 @@ import { AuthProvider } from '../context/AuthContext';
 import { ChatProvider } from '../context/ChatContext';
 
 export const metadata: Metadata = {
-  title: 'Real-Time Messaging | Production Chat',
-  description: 'Decoupled real-time chat application built with Next.js, Express, Socket.IO and Valkey/Kafka abstractions.',
+  title: 'WhatsApp Web | Real-Time Messaging',
+  description: 'Production real-time WhatsApp-style messaging application with mobile number authentication.',
 };
 
 export default function RootLayout({
@@ -15,8 +15,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 antialiased">
+    <html lang="en" className="light">
+      <body className="h-screen w-screen overflow-hidden bg-[#d1d7db] text-[#111b21] antialiased">
         <AuthProvider>
           <ChatProvider>
             {children}

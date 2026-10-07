@@ -1,7 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 class ApiClient {
-  private getToken(): string | null {
+  public getToken(): string | null {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem('chat_token');
   }
@@ -12,7 +12,23 @@ class ApiClient {
     }
   }
 
-  public clearToken() {
+  public getSavedUser(): any | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const stored = localStorage.getItem('chat_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  public setSavedUser(user: any) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('chat_user', JSON.stringify(user));
+    }
+  }
+
+  public clearSession() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('chat_token');
       localStorage.removeItem('chat_user');
@@ -46,30 +62,40 @@ class ApiClient {
   }
 
   // Auth Endpoints
-  async register(body: { email: string; username: string; password: string }) {
-    return this.request<{ user: any; token: string }>('/api/auth/register', {
+  async register(body: { phoneNumber?: string; email?: string; username: string; password: string }) {
+    const res = await this.request<{ user: any; token: string }>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(body),
     });
+    this.setToken(res.token);
+    this.setSavedUser(res.user);
+    return res;
   }
 
-  async login(body: { emailOrUsername: string; password: string }) {
-    return this.request<{ user: any; token: string }>('/api/auth/login', {
+  async login(body: { phoneNumber?: string; emailOrUsername?: string; identifier?: string; password: string }) {
+    const res = await this.request<{ user: any; token: string }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(body),
     });
+    this.setToken(res.token);
+    this.setSavedUser(res.user);
+    return res;
   }
 
   async logout() {
     try {
       await this.request('/api/auth/logout', { method: 'POST' });
     } finally {
-      this.clearToken();
+      this.clearSession();
     }
   }
 
   async getMe() {
-    return this.request<{ user: any }>('/api/auth/me');
+    const res = await this.request<{ user: any }>('/api/auth/me');
+    if (res?.user) {
+      this.setSavedUser(res.user);
+    }
+    return res;
   }
 
   // User Endpoints
@@ -82,10 +108,15 @@ class ApiClient {
   }
 
   async updateProfile(body: { bio?: string; avatarUrl?: string }) {
-    return this.request<any>('/api/users/profile', {
+    const res = await this.request<any>('/api/users/profile', {
       method: 'PATCH',
       body: JSON.stringify(body),
     });
+    const current = this.getSavedUser();
+    if (current) {
+      this.setSavedUser({ ...current, ...res });
+    }
+    return res;
   }
 
   // Conversation Endpoints

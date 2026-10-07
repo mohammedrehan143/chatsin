@@ -5,14 +5,23 @@ import { sendSuccess } from '../utils/response';
 import { AuthenticatedRequest } from '../middleware/auth';
 
 const registerSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  phoneNumber: z.string().min(7, 'Mobile number must be at least 7 digits').optional(),
+  email: z.string().email('Please enter a valid email address').optional(),
   username: z.string().min(3, 'Username must be at least 3 characters').max(30, 'Username max 30 characters'),
   password: z.string().min(6, 'Password must be at least 6 characters')
+}).refine(data => data.phoneNumber || data.email, {
+  message: 'Either a mobile number or email address is required',
+  path: ['phoneNumber']
 });
 
 const loginSchema = z.object({
-  emailOrUsername: z.string().min(1, 'Email or username is required'),
+  phoneNumber: z.string().optional(),
+  emailOrUsername: z.string().optional(),
+  identifier: z.string().optional(),
   password: z.string().min(1, 'Password is required')
+}).refine(data => data.phoneNumber || data.emailOrUsername || data.identifier, {
+  message: 'Mobile number, username, or email is required',
+  path: ['identifier']
 });
 
 export class AuthController {
@@ -29,7 +38,11 @@ export class AuthController {
   async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const validated = loginSchema.parse(req.body);
-      const result = await authService.login(validated);
+      const identifier = validated.phoneNumber || validated.identifier || validated.emailOrUsername!;
+      const result = await authService.login({
+        identifier,
+        password: validated.password
+      });
       sendSuccess(res, result, 200);
     } catch (error) {
       next(error);

@@ -4,9 +4,8 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { Avatar } from '../ui/Avatar';
-import { StatusDot } from '../ui/StatusDot';
 import { api } from '../../lib/api';
-import { X, Mail, Calendar, ShieldCheck, Edit3, Check } from 'lucide-react';
+import { X, Phone, Mail, Calendar, Edit3, Check, ShieldCheck } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface UserProfilePanelProps {
@@ -41,107 +40,126 @@ export function UserProfilePanel({ isOpen, onClose, targetUserOverride }: UserPr
   };
 
   return (
-    <aside className="w-full lg:w-80 bg-slate-900 border-l border-slate-800 flex flex-col h-full text-slate-100 select-none z-20">
+    <aside className="w-full lg:w-[380px] bg-[#f0f2f5] border-l border-[#e9edef] flex flex-col h-full text-[#111b21] select-none z-20 shrink-0">
       {/* Header */}
-      <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white">
-          {isOwnProfile ? 'My Profile' : 'Contact Information'}
+      <div className="h-16 px-4 bg-[#f0f2f5] border-b border-[#e9edef] flex items-center justify-between shrink-0">
+        <h3 className="text-base font-semibold text-[#111b21]">
+          {isOwnProfile ? 'Profile' : 'Contact info'}
         </h3>
         <button
           onClick={onClose}
-          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+          className="p-1.5 text-[#54656f] hover:text-[#111b21] hover:bg-[#e9edef] rounded-full transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Profile Details */}
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center text-center">
-        <div className="relative mb-4">
-          <Avatar src={displayUser?.avatarUrl} alt={displayUser?.username || 'User'} size="xl" />
-          <span
-            className={`absolute bottom-1 right-1 w-4 h-4 rounded-full ring-2 ring-slate-900 ${
-              displayUser?.isOnline ? 'bg-emerald-500' : 'bg-slate-500'
-            }`}
-          />
-        </div>
-
-        <h2 className="text-lg font-bold text-white mb-1">{displayUser?.username}</h2>
-        <StatusDot isOnline={displayUser?.isOnline} showText className="mb-6" />
-
-        {/* Info Cards */}
-        <div className="w-full space-y-4 text-left">
-          {/* Email */}
-          <div className="p-3.5 bg-slate-800/60 rounded-xl border border-slate-700/60">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-1">
-              <Mail className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Email Address</span>
-            </div>
-            <p className="text-sm text-slate-200 truncate">{displayUser?.email}</p>
-          </div>
-
-          {/* Bio */}
-          <div className="p-3.5 bg-slate-800/60 rounded-xl border border-slate-700/60">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-400 mb-1">
-              <span className="flex items-center gap-2">
-                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-                <span>About / Bio</span>
-              </span>
-              {isOwnProfile && !isEditingBio && (
-                <button
-                  onClick={() => {
-                    setBioInput(displayUser?.bio || '');
-                    setIsEditingBio(true);
-                  }}
-                  className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 text-[11px]"
-                >
-                  <Edit3 className="w-3 h-3" /> Edit
-                </button>
-              )}
-            </div>
-
-            {isEditingBio ? (
-              <div className="mt-2 space-y-2">
-                <textarea
-                  value={bioInput}
-                  onChange={(e) => setBioInput(e.target.value)}
-                  maxLength={250}
-                  rows={3}
-                  className="w-full bg-slate-900 border border-slate-700 focus:border-indigo-500 rounded-lg p-2 text-xs text-white focus:outline-none"
-                  placeholder="Write a brief bio..."
-                />
-                <div className="flex justify-end gap-1.5">
-                  <button
-                    onClick={() => setIsEditingBio(false)}
-                    className="px-2.5 py-1 text-[11px] text-slate-400 hover:text-white rounded"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveBio}
-                    disabled={savingBio}
-                    className="px-2.5 py-1 text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded flex items-center gap-1"
-                  >
-                    <Check className="w-3 h-3" /> Save
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {displayUser?.bio || 'No bio provided.'}
-              </p>
+      {/* Main Profile Content */}
+      <div className="flex-1 overflow-y-auto space-y-2.5">
+        {/* Avatar & Display Name Card */}
+        <div className="bg-white p-6 flex flex-col items-center text-center shadow-xs border-b border-[#e9edef]">
+          <div className="relative mb-4">
+            <Avatar src={displayUser?.avatarUrl} alt={displayUser?.username || 'User'} size="xl" />
+            {displayUser?.isOnline && (
+              <span className="absolute bottom-1 right-1 w-4 h-4 bg-[#25d366] rounded-full ring-2 ring-white" />
             )}
           </div>
 
-          {/* Member Since */}
-          <div className="p-3.5 bg-slate-800/60 rounded-xl border border-slate-700/60">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-1">
-              <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Joined</span>
+          <h2 className="text-xl font-medium text-[#111b21] mb-1">{displayUser?.username}</h2>
+          <p className="text-xs text-[#00a884] font-medium">
+            {displayUser?.isOnline ? 'Online' : 'Offline'}
+          </p>
+        </div>
+
+        {/* Mobile Number Card */}
+        <div className="bg-white p-4 shadow-xs border-b border-[#e9edef]">
+          <span className="text-[11px] font-semibold text-[#667781] uppercase tracking-wider block mb-2">
+            Mobile Number
+          </span>
+          <div className="flex items-center gap-3 text-[#111b21]">
+            <Phone className="w-4 h-4 text-[#00a884] shrink-0" />
+            <span className="text-sm font-medium">
+              {displayUser?.phoneNumber || 'No mobile number set'}
+            </span>
+          </div>
+        </div>
+
+        {/* About / Bio Card */}
+        <div className="bg-white p-4 shadow-xs border-b border-[#e9edef]">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-semibold text-[#667781] uppercase tracking-wider">
+              About
+            </span>
+            {isOwnProfile && !isEditingBio && (
+              <button
+                onClick={() => {
+                  setBioInput(displayUser?.bio || '');
+                  setIsEditingBio(true);
+                }}
+                className="text-[#00a884] hover:text-[#008069] flex items-center gap-1 text-xs font-medium"
+              >
+                <Edit3 className="w-3.5 h-3.5" /> Edit
+              </button>
+            )}
+          </div>
+
+          {isEditingBio ? (
+            <div className="mt-2 space-y-2">
+              <textarea
+                value={bioInput}
+                onChange={(e) => setBioInput(e.target.value)}
+                maxLength={250}
+                rows={3}
+                className="w-full bg-[#f0f2f5] border border-[#d1d7db] focus:border-[#00a884] rounded-lg p-2.5 text-xs text-[#111b21] focus:outline-none"
+                placeholder="Add your about info..."
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setIsEditingBio(false)}
+                  className="px-3 py-1 text-xs text-[#667781] hover:text-[#111b21]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveBio}
+                  disabled={savingBio}
+                  className="px-3 py-1 text-xs bg-[#00a884] hover:bg-[#008069] text-white font-medium rounded-lg flex items-center gap-1 shadow-xs"
+                >
+                  <Check className="w-3.5 h-3.5" /> Save
+                </button>
+              </div>
             </div>
-            <p className="text-xs text-slate-300">
-              {displayUser?.createdAt ? format(new Date(displayUser.createdAt), 'MMMM yyyy') : 'Recently'}
+          ) : (
+            <p className="text-xs text-[#3b4a54] leading-relaxed">
+              {displayUser?.bio || 'Hey there! I am using WhatsApp.'}
             </p>
+          )}
+        </div>
+
+        {/* Email Card (if present) */}
+        {displayUser?.email && (
+          <div className="bg-white p-4 shadow-xs border-b border-[#e9edef]">
+            <span className="text-[11px] font-semibold text-[#667781] uppercase tracking-wider block mb-2">
+              Email
+            </span>
+            <div className="flex items-center gap-3 text-[#111b21]">
+              <Mail className="w-4 h-4 text-[#8696a0] shrink-0" />
+              <span className="text-xs text-[#3b4a54] truncate">{displayUser.email}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Security & Join Date */}
+        <div className="bg-white p-4 shadow-xs border-b border-[#e9edef] space-y-3">
+          <div className="flex items-center gap-2.5 text-xs text-[#667781]">
+            <ShieldCheck className="w-4 h-4 text-[#00a884]" />
+            <span>Messages and calls are end-to-end encrypted.</span>
+          </div>
+          <div className="flex items-center gap-2.5 text-xs text-[#667781]">
+            <Calendar className="w-4 h-4 text-[#8696a0]" />
+            <span>
+              Joined {displayUser?.createdAt ? format(new Date(displayUser.createdAt), 'MMMM yyyy') : 'Recently'}
+            </span>
           </div>
         </div>
       </div>

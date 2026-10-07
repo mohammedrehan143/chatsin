@@ -4,9 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
 import { useChat } from '../../context/ChatContext';
 import { Avatar } from '../ui/Avatar';
-import { StatusDot } from '../ui/StatusDot';
 import { User } from '../../types';
-import { Search, X, MessageSquarePlus } from 'lucide-react';
+import { Search, X, MessageSquarePlus, Phone } from 'lucide-react';
 
 interface UserSearchModalProps {
   isOpen: boolean;
@@ -40,7 +39,7 @@ export function UserSearchModal({ isOpen, onClose }: UserSearchModalProps) {
 
     const timer = setTimeout(() => {
       search();
-    }, 250);
+    }, 200);
 
     return () => clearTimeout(timer);
   }, [query, isOpen]);
@@ -53,71 +52,74 @@ export function UserSearchModal({ isOpen, onClose }: UserSearchModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
-        {/* Header */}
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-white flex items-center gap-2">
-            <MessageSquarePlus className="w-5 h-5 text-indigo-400" />
-            New Conversation
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
+      <div className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-[#d1d7db]">
+        {/* WhatsApp Header */}
+        <div className="px-5 py-4 bg-[#00a884] text-white flex items-center justify-between">
+          <h3 className="text-base font-semibold flex items-center gap-2">
+            <MessageSquarePlus className="w-5 h-5 text-white" />
+            New Chat
           </h3>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="p-1 hover:bg-white/20 rounded-full transition-colors text-white"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Input */}
-        <div className="p-4 border-b border-slate-800/80">
+        {/* Search Input */}
+        <div className="p-3 bg-[#f0f2f5] border-b border-[#e9edef]">
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[#54656f] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by username or email..."
-              className="w-full bg-slate-800/80 border border-slate-700/80 focus:border-indigo-500 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none transition-all"
+              placeholder="Search by mobile number or name..."
+              className="w-full bg-white border border-[#d1d7db] focus:border-[#00a884] rounded-lg pl-10 pr-4 py-2 text-sm text-[#111b21] placeholder-[#8696a0] focus:outline-none transition-all shadow-xs"
             />
           </div>
         </div>
 
-        {/* List */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+        {/* Results List */}
+        <div className="flex-1 overflow-y-auto divide-y divide-[#f0f2f5]">
           {loading ? (
-            <div className="py-12 flex items-center justify-center text-slate-500 text-sm gap-2">
-              <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-              <span>Searching users...</span>
+            <div className="py-12 flex items-center justify-center text-[#667781] text-xs gap-2">
+              <div className="w-5 h-5 border-2 border-[#00a884] border-t-transparent rounded-full animate-spin" />
+              <span>Searching contacts...</span>
             </div>
           ) : results.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 text-sm">
-              {query ? 'No users found matching your query' : 'Type to search for contacts'}
+            <div className="py-12 text-center text-[#667781] text-xs">
+              {query ? 'No contacts found with that number or name' : 'Type a mobile number or name to search'}
             </div>
           ) : (
             results.map((u) => (
               <div
                 key={u.id}
                 onClick={() => handleSelectUser(u)}
-                className="p-3 rounded-xl flex items-center justify-between hover:bg-slate-800/70 cursor-pointer transition-colors"
+                className="px-4 py-3 flex items-center justify-between hover:bg-[#f5f6f6] cursor-pointer transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <Avatar src={u.avatarUrl} alt={u.username} size="md" />
-                    <span
-                      className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-slate-900 ${
-                        u.isOnline ? 'bg-emerald-500' : 'bg-slate-500'
-                      }`}
-                    />
+                    {u.isOnline && (
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-white bg-[#25d366]" />
+                    )}
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-white">{u.username}</h4>
-                    <p className="text-xs text-slate-400 truncate max-w-[200px]">{u.email}</p>
+                    <h4 className="text-sm font-semibold text-[#111b21]">{u.username}</h4>
+                    <p className="text-xs text-[#667781] flex items-center gap-1 mt-0.5">
+                      <Phone className="w-3 h-3 text-[#00a884]" />
+                      <span>{u.phoneNumber || u.email}</span>
+                    </p>
                   </div>
                 </div>
 
-                <StatusDot isOnline={u.isOnline} showText />
+                <span className="text-xs font-medium text-[#00a884] hover:underline">
+                  Chat
+                </span>
               </div>
             ))
           )}

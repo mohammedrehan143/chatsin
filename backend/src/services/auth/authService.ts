@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 import { userRepository, IUserRepository } from '../../repositories/UserRepository';
 import { sessionRepository, ISessionRepository } from '../../repositories/SessionRepository';
 import { eventPublisher } from '../events';
-import { cacheService } from '../cache';
 import { config } from '../../config';
 import { AppError } from '../../utils/response';
 import { User, AuthTokenPayload } from '../../types';
@@ -14,10 +13,36 @@ export class AuthService {
     private sessionRepo: ISessionRepository = sessionRepository
   ) {}
 
-  async register(data: { email: string; username: string; password: string }): Promise<{ user: Omit<User, 'passwordHash'>; token: string }> {
-    const existingEmail = await this.userRepo.findByEmail(data.email);
+  async register(data: {
+    phoneNumber?: string;
+    email?: string;
+    username: string;
+    password: string;
+  }): Promise<{ user: Omit<User, 'passwordHash'>; token: string }> {
+    const rawPhone = data.phoneNumber?.trim();
+    const cleanPhone = rawPhone ? rawPhone.replace(/[^0-9+]/g, '') : undefined;
+
+    // Check existing phone number if provided
+    if (cleanPhone) {
+      const existingPhone = await this.userRepo.findByPhone(cleanPhone);
+      if (existingPhone) {
+        throw new AppError('An account with this mobile number already exists', 409, 'PHONE_EXISTS');
+      }
+    }
+
+    // Determine or generate unique email
+    let email = data.email?.toLowerCase().trim();
+    if (!email) {
+      if (cleanPhone) {
+        email = `${cleanPhone.replace('+', '')}@phone.chatapp`;
+      } else {
+        email = `${data.username.toLowerCase()}@user.chatapp`;
+      }
+    }
+
+    const existingEmail = await this.userRepo.findByEmail(email);
     if (existingEmail) {
-      throw new AppError('An account with this email already exists', 409, 'EMAIL_EXISTS');
+      throw new AppError('An account with this email/number already exists', 409, 'EMAIL_EXISTS');
     }
 
     const existingUsername = await this.userRepo.findByUsername(data.username);
@@ -27,24 +52,27 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(data.password, 12);
     const user = await this.userRepo.create({
-      email: data.email,
+      email,
       username: data.username,
+      phoneNumber: cleanPhone,
       passwordHash,
       avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(data.username)}`
     });
 
     const token = this.generateToken({
       userId: user.id,
+      phoneNumber: user.phoneNumber,
       email: user.email,
       username: user.username
     });
 
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30-day persistent session
     await this.sessionRepo.create(user.id, token, expiresAt);
 
     // Publish event
     await eventPublisher.publish('user_registered', {
       userId: user.id,
+      phoneNumber: user.phoneNumber,
       email: user.email,
       username: user.username
     });
@@ -53,30 +81,51 @@ export class AuthService {
     return { user: safeUser, token };
   }
 
-  async login(data: { emailOrUsername: string; password: string }): Promise<{ user: Omit<User, 'passwordHash'>; token: string }> {
+  async login(data: {
+    identifier: string; // Phone number, username, or email
+    password: string;
+  }): Promise<{ user: Omit<User, 'passwordHash'>; token: string }> {
+    const rawIdentifier = data.identifier.trim();
     let user: User | null = null;
-    if (data.emailOrUsername.includes('@')) {
-      user = await this.userRepo.findByEmail(data.emailOrUsername);
-    } else {
-      user = await this.userRepo.findByUsername(data.emailOrUsername);
+
+    // 1. Try finding by phone if it looks like a phone number
+    const digitsOnly = rawIdentifier.replace(/[^0-9+]/g, '');
+    if (digitsOnly.length >= 7) {
+      user = await this.userRepo.findByPhone(digitsOnly);
+    }
+
+    // 2. Try email if contains @
+    if (!user && rawIdentifier.includes('@')) {
+      user = await this.userRepo.findByEmail(rawIdentifier);
+    }
+
+    // 3. Try username
+    if (!user) {
+      user = await this.userRepo.findByUsername(rawIdentifier);
+    }
+
+    // 4. Try raw phone if not matched yet
+    if (!user) {
+      user = await this.userRepo.findByPhone(rawIdentifier);
     }
 
     if (!user || !user.passwordHash) {
-      throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
+      throw new AppError('Invalid credentials. Please check your mobile number or password.', 401, 'INVALID_CREDENTIALS');
     }
 
     const isMatch = await bcrypt.compare(data.password, user.passwordHash);
     if (!isMatch) {
-      throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
+      throw new AppError('Invalid credentials. Please check your mobile number or password.', 401, 'INVALID_CREDENTIALS');
     }
 
     const token = this.generateToken({
       userId: user.id,
+      phoneNumber: user.phoneNumber,
       email: user.email,
       username: user.username
     });
 
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30-day persistent session
     await this.sessionRepo.create(user.id, token, expiresAt);
 
     const { passwordHash: _, ...safeUser } = user;
@@ -96,7 +145,7 @@ export class AuthService {
   }
 
   private generateToken(payload: AuthTokenPayload): string {
-    return jwt.sign(payload, config.jwt.secret, { expiresIn: '7d' });
+    return jwt.sign(payload, config.jwt.secret, { expiresIn: '30d' }); // 30d persistent token
   }
 }
 

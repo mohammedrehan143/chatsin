@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
-import { SendHorizonal } from 'lucide-react';
+import { SendHorizonal, Smile, Paperclip } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 
 export function MessageInput() {
@@ -12,7 +12,7 @@ export function MessageInput() {
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setContent(e.target.value);
 
-    // Typing debounce logic
+    // Typing debounce
     sendTyping(true);
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
@@ -51,27 +51,48 @@ export function MessageInput() {
   }, []);
 
   return (
-    <div className="p-3 bg-slate-900 border-t border-slate-800">
+    <div className="px-4 py-2.5 bg-[#f0f2f5] border-t border-[#e9edef] shrink-0">
       <form
         onSubmit={(e) => {
           e.preventDefault();
           handleSend();
         }}
-        className="flex items-center gap-2 max-w-4xl mx-auto"
+        className="flex items-center gap-2 max-w-5xl mx-auto"
       >
+        <button
+          type="button"
+          title="Emojis"
+          className="p-1.5 text-[#54656f] hover:text-[#111b21] transition-colors rounded-full"
+        >
+          <Smile className="w-5 h-5" />
+        </button>
+        <button
+          type="button"
+          title="Attach"
+          className="p-1.5 text-[#54656f] hover:text-[#111b21] transition-colors rounded-full"
+        >
+          <Paperclip className="w-5 h-5" />
+        </button>
+
         <input
           type="text"
           value={content}
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
+          placeholder="Type a message"
           maxLength={4000}
-          className="flex-1 bg-slate-800/80 hover:bg-slate-800 focus:bg-slate-800 border border-slate-700 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all shadow-inner"
+          className="flex-1 bg-white border-0 focus:ring-0 rounded-lg px-4 py-2.5 text-sm text-[#111b21] placeholder-[#8696a0] focus:outline-none transition-all shadow-xs"
         />
+
         <button
           type="submit"
           disabled={!content.trim()}
-          className="p-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center shrink-0 cursor-pointer disabled:cursor-not-allowed"
+          title="Send message"
+          className={`p-2.5 rounded-full transition-all flex items-center justify-center shrink-0 cursor-pointer ${
+            content.trim()
+              ? 'bg-[#00a884] hover:bg-[#008069] text-white shadow-sm'
+              : 'text-[#8696a0] hover:text-[#54656f] opacity-50 cursor-not-allowed'
+          }`}
         >
           <SendHorizonal className="w-5 h-5" />
         </button>

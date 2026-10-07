@@ -4,11 +4,10 @@ import React, { useRef, useEffect } from 'react';
 import { useChat } from '../../context/ChatContext';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/Avatar';
-import { StatusDot } from '../ui/StatusDot';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
 import { TypingIndicator } from './TypingIndicator';
-import { ArrowLeft, UserCircle2, MessageSquareDashed } from 'lucide-react';
+import { ArrowLeft, UserCircle2, Lock, MessageCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface ChatWindowProps {
@@ -28,14 +27,19 @@ export function ChatWindow({ onBackMobile, onOpenProfile }: ChatWindowProps) {
 
   if (!activeConversation) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-950 text-center select-none">
-        <div className="w-16 h-16 bg-slate-900 border border-slate-800 rounded-3xl flex items-center justify-center text-indigo-400 mb-4 shadow-xl">
-          <MessageSquareDashed className="w-8 h-8" />
+      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#f0f2f5] border-b-[6px] border-[#25d366] text-center select-none">
+        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-[#00a884] mb-6 shadow-sm border border-[#e9edef]">
+          <MessageCircle className="w-10 h-10 fill-[#00a884]" />
         </div>
-        <h3 className="text-lg font-semibold text-white">Select a conversation</h3>
-        <p className="text-sm text-slate-400 mt-1 max-w-sm">
-          Choose a contact from the sidebar or click &ldquo;+&rdquo; to discover contacts and start chatting.
+        <h3 className="text-2xl font-light text-[#41525d]">WhatsApp Web</h3>
+        <p className="text-xs text-[#667781] mt-2 max-w-md leading-relaxed">
+          Send and receive messages in real time without keeping your phone online.
+          Select a chat to begin messaging.
         </p>
+        <div className="mt-8 flex items-center gap-1.5 text-xs text-[#8696a0]">
+          <Lock className="w-3.5 h-3.5" />
+          <span>End-to-end encrypted</span>
+        </div>
       </div>
     );
   }
@@ -44,13 +48,13 @@ export function ChatWindow({ onBackMobile, onOpenProfile }: ChatWindowProps) {
   const isOnline = partner?.isOnline;
 
   return (
-    <main className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden">
-      {/* Header */}
-      <header className="p-4 bg-slate-900/80 backdrop-blur border-b border-slate-800/80 flex items-center justify-between z-10">
+    <main className="flex-1 flex flex-col h-full bg-[#efeae2] overflow-hidden">
+      {/* WhatsApp Chat Header */}
+      <header className="h-16 px-4 bg-[#f0f2f5] border-b border-[#e9edef] flex items-center justify-between z-10 shrink-0">
         <div className="flex items-center gap-3">
           <button
             onClick={onBackMobile}
-            className="md:hidden p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"
+            className="md:hidden p-1.5 text-[#54656f] hover:text-[#111b21] hover:bg-[#e9edef] rounded-full"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -61,56 +65,61 @@ export function ChatWindow({ onBackMobile, onOpenProfile }: ChatWindowProps) {
           >
             <div className="relative">
               <Avatar src={partner?.avatarUrl} alt={partner?.username || 'User'} size="md" />
-              <span
-                className={`absolute bottom-0 right-0 w-3 h-3 rounded-full ring-2 ring-slate-900 ${
-                  isOnline ? 'bg-emerald-500' : 'bg-slate-500'
-                }`}
-              />
+              {isOnline && (
+                <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#25d366] rounded-full ring-2 ring-white" />
+              )}
             </div>
 
             <div>
-              <h2 className="text-sm font-semibold text-white group-hover:text-indigo-400 transition-colors">
-                {partner?.username || 'Chat'}
+              <h2 className="text-sm font-semibold text-[#111b21] group-hover:text-[#00a884] transition-colors leading-tight">
+                {partner?.username || partner?.phoneNumber || 'Contact'}
               </h2>
-              <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                <StatusDot isOnline={isOnline} />
-                <span>
-                  {isOnline
-                    ? 'Online'
-                    : partner?.lastSeen
-                    ? `Last seen ${formatDistanceToNow(new Date(partner.lastSeen), { addSuffix: true })}`
-                    : 'Offline'}
-                </span>
-              </div>
+              <p className="text-xs text-[#667781]">
+                {isOnline ? (
+                  <span className="text-[#00a884] font-medium">online</span>
+                ) : partner?.lastSeen ? (
+                  `last seen ${formatDistanceToNow(new Date(partner.lastSeen), { addSuffix: true })}`
+                ) : (
+                  partner?.phoneNumber || 'offline'
+                )}
+              </p>
             </div>
           </div>
         </div>
 
         <button
           onClick={onOpenProfile}
-          title="View profile info"
-          className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+          title="Contact Info"
+          className="p-2 text-[#54656f] hover:text-[#111b21] hover:bg-[#e9edef] rounded-full transition-colors"
         >
           <UserCircle2 className="w-5 h-5" />
         </button>
       </header>
 
-      {/* Message Feed */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-1">
+      {/* WhatsApp Message Feed */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-1.5 whatsapp-chat-bg">
+        {/* Encryption Banner */}
+        <div className="flex justify-center my-3 select-none">
+          <div className="bg-[#ffeecd] border border-[#ffdf9e] rounded-lg px-3 py-1.5 text-[11px] text-[#54656f] flex items-center gap-1.5 shadow-xs max-w-md text-center">
+            <Lock className="w-3 h-3 text-[#54656f] shrink-0" />
+            <span>Messages are private and saved in real-time.</span>
+          </div>
+        </div>
+
         {loadingMessages ? (
-          <div className="flex items-center justify-center py-20 text-slate-500 text-sm gap-2">
-            <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-            <span>Loading message history...</span>
+          <div className="flex items-center justify-center py-20 text-[#667781] text-xs gap-2">
+            <div className="w-5 h-5 border-2 border-[#00a884] border-t-transparent rounded-full animate-spin" />
+            <span>Loading messages...</span>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center select-none">
-            <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-slate-600 mb-2">
+          <div className="flex flex-col items-center justify-center py-20 text-center select-none">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#8696a0] mb-2 shadow-sm border border-[#e9edef]">
               <Avatar src={partner?.avatarUrl} alt={partner?.username || 'User'} size="lg" />
             </div>
-            <p className="text-sm font-medium text-slate-300">
-              No messages with {partner?.username || 'this user'} yet
+            <p className="text-xs font-semibold text-[#111b21]">
+              No messages with {partner?.username || partner?.phoneNumber} yet
             </p>
-            <p className="text-xs text-slate-500 mt-1">Send a greeting to start the conversation!</p>
+            <p className="text-[11px] text-[#667781] mt-1">Say hello to start the chat!</p>
           </div>
         ) : (
           messages.map((msg) => (
@@ -127,7 +136,7 @@ export function ChatWindow({ onBackMobile, onOpenProfile }: ChatWindowProps) {
       {/* Typing Indicator */}
       <TypingIndicator usernames={typingUsers} />
 
-      {/* Message Input Form */}
+      {/* Message Input Bar */}
       <MessageInput />
     </main>
   );

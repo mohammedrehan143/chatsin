@@ -7,7 +7,8 @@ export interface IUserRepository {
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   findByUsername(username: string): Promise<User | null>;
-  create(data: { email: string; username: string; passwordHash: string; avatarUrl?: string; bio?: string }): Promise<User>;
+  findByPhone(phone: string): Promise<User | null>;
+  create(data: { email: string; username: string; passwordHash: string; phoneNumber?: string; avatarUrl?: string; bio?: string }): Promise<User>;
   update(id: string, data: Partial<User>): Promise<User | null>;
   search(query: string, excludeUserId?: string, limit?: number): Promise<User[]>;
   getAll(limit?: number): Promise<User[]>;
@@ -37,7 +38,7 @@ export class UserRepository implements IUserRepository {
       }
     }
     for (const u of memoryStore.users.values()) {
-      if (u.email.toLowerCase() === normalizedEmail) return u;
+      if (u.email && u.email.toLowerCase() === normalizedEmail) return u;
     }
     return null;
   }
@@ -58,9 +59,26 @@ export class UserRepository implements IUserRepository {
     return null;
   }
 
-  async create(data: { email: string; username: string; passwordHash: string; avatarUrl?: string; bio?: string }): Promise<User> {
+  async findByPhone(phone: string): Promise<User | null> {
+    const normalizedPhone = phone.replace(/[^0-9+]/g, '');
+    if (isDatabaseConnected()) {
+      try {
+        const user = await getPrismaClient().user.findUnique({ where: { phoneNumber: normalizedPhone } });
+        return user as User | null;
+      } catch (err) {
+        console.warn('[UserRepository] Prisma findByPhone error', err);
+      }
+    }
+    for (const u of memoryStore.users.values()) {
+      if (u.phoneNumber && u.phoneNumber.replace(/[^0-9+]/g, '') === normalizedPhone) return u;
+    }
+    return null;
+  }
+
+  async create(data: { email: string; username: string; passwordHash: string; phoneNumber?: string; avatarUrl?: string; bio?: string }): Promise<User> {
     const email = data.email.toLowerCase().trim();
     const username = data.username.trim();
+    const phoneNumber = data.phoneNumber ? data.phoneNumber.replace(/[^0-9+]/g, '') : null;
 
     if (isDatabaseConnected()) {
       try {
@@ -69,6 +87,7 @@ export class UserRepository implements IUserRepository {
             email,
             username,
             passwordHash: data.passwordHash,
+            phoneNumber,
             avatarUrl: data.avatarUrl || null,
             bio: data.bio || null
           }
@@ -83,6 +102,7 @@ export class UserRepository implements IUserRepository {
       id: crypto.randomUUID(),
       email,
       username,
+      phoneNumber,
       passwordHash: data.passwordHash,
       avatarUrl: data.avatarUrl || null,
       bio: data.bio || null,
@@ -100,6 +120,7 @@ export class UserRepository implements IUserRepository {
         const updated = await getPrismaClient().user.update({
           where: { id },
           data: {
+            ...(data.phoneNumber !== undefined ? { phoneNumber: data.phoneNumber } : {}),
             ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl } : {}),
             ...(data.bio !== undefined ? { bio: data.bio } : {}),
             ...(data.lastSeen !== undefined ? { lastSeen: new Date(data.lastSeen) } : {})
@@ -124,6 +145,8 @@ export class UserRepository implements IUserRepository {
 
   async search(query: string, excludeUserId?: string, limit = 20): Promise<User[]> {
     const q = query.toLowerCase().trim();
+    const digitsOnly = query.replace(/[^0-9]/g, '');
+
     if (isDatabaseConnected()) {
       try {
         const users = await getPrismaClient().user.findMany({
@@ -133,7 +156,8 @@ export class UserRepository implements IUserRepository {
               {
                 OR: [
                   { username: { contains: q, mode: 'insensitive' } },
-                  { email: { contains: q, mode: 'insensitive' } }
+                  { email: { contains: q, mode: 'insensitive' } },
+                  digitsOnly ? { phoneNumber: { contains: digitsOnly } } : {}
                 ]
               }
             ]
@@ -152,7 +176,11 @@ export class UserRepository implements IUserRepository {
     const results: User[] = [];
     for (const u of memoryStore.users.values()) {
       if (excludeUserId && u.id === excludeUserId) continue;
-      if (u.username.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) {
+      const matchUsername = u.username.toLowerCase().includes(q);
+      const matchEmail = u.email && u.email.toLowerCase().includes(q);
+      const matchPhone = digitsOnly && u.phoneNumber && u.phoneNumber.includes(digitsOnly);
+
+      if (matchUsername || matchEmail || matchPhone) {
         const { passwordHash, ...safeUser } = u;
         results.push(safeUser as User);
         if (results.length >= limit) break;

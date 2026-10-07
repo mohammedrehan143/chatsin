@@ -24,15 +24,16 @@ async function runVerification() {
   });
 
   try {
-    // 2. Register User 1 (Alice)
+    // 2. Register User 1 (Alice) with Mobile Number
     const aliceEmail = `alice_${Date.now()}@example.com`;
     const aliceUsername = `alice_${Date.now()}`;
+    const alicePhone = `+198${Math.floor(10000000 + Math.random() * 90000000)}`;
     const alicePass = 'Password123!';
 
     const regAliceRes = await fetch(`${BASE_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: aliceEmail, username: aliceUsername, password: alicePass }),
+      body: JSON.stringify({ email: aliceEmail, username: aliceUsername, phoneNumber: alicePhone, password: alicePass }),
     });
     const regAliceData = await regAliceRes.json();
     if (!regAliceData.success || !regAliceData.data?.token) {
@@ -40,17 +41,18 @@ async function runVerification() {
     }
     const aliceToken = regAliceData.data.token;
     const aliceUser = regAliceData.data.user;
-    console.log(`[PASS] 2. User 1 (Alice) registered successfully. ID: ${aliceUser.id}`);
+    console.log(`[PASS] 2. User 1 (Alice) registered with Mobile (${alicePhone}). ID: ${aliceUser.id}`);
 
-    // 3. Register User 2 (Bob)
+    // 3. Register User 2 (Bob) with Mobile Number
     const bobEmail = `bob_${Date.now()}@example.com`;
     const bobUsername = `bob_${Date.now()}`;
+    const bobPhone = `+198${Math.floor(10000000 + Math.random() * 90000000)}`;
     const bobPass = 'Password123!';
 
     const regBobRes = await fetch(`${BASE_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: bobEmail, username: bobUsername, password: bobPass }),
+      body: JSON.stringify({ email: bobEmail, username: bobUsername, phoneNumber: bobPhone, password: bobPass }),
     });
     const regBobData = await regBobRes.json();
     if (!regBobData.success || !regBobData.data?.token) {
@@ -58,29 +60,29 @@ async function runVerification() {
     }
     const bobToken = regBobData.data.token;
     const bobUser = regBobData.data.user;
-    console.log(`[PASS] 3. User 2 (Bob) registered successfully. ID: ${bobUser.id}`);
+    console.log(`[PASS] 3. User 2 (Bob) registered with Mobile (${bobPhone}). ID: ${bobUser.id}`);
 
-    // 4. Test Login for Alice
+    // 4. Test Login for Alice via Mobile Number
     const loginAliceRes = await fetch(`${BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ emailOrUsername: aliceUsername, password: alicePass }),
+      body: JSON.stringify({ emailOrUsername: alicePhone, password: alicePass }),
     });
     const loginAliceData = await loginAliceRes.json();
     if (!loginAliceData.success || !loginAliceData.data?.token) {
-      throw new Error('Alice login failed');
+      throw new Error('Alice mobile login failed');
     }
-    console.log('[PASS] 4. Login verification passed with valid JWT token issuance');
+    console.log('[PASS] 4. Mobile number login verification passed with valid JWT token issuance');
 
-    // 5. User Search (Alice searches for Bob)
-    const searchRes = await fetch(`${BASE_URL}/api/users?q=${encodeURIComponent(bobUsername)}`, {
+    // 5. User Search by Mobile Number (Alice searches for Bob via his phone)
+    const searchRes = await fetch(`${BASE_URL}/api/users?q=${encodeURIComponent(bobPhone)}`, {
       headers: { Authorization: `Bearer ${aliceToken}` },
     });
     const searchData = await searchRes.json();
     if (!searchData.success || !searchData.data.some((u: any) => u.id === bobUser.id)) {
-      throw new Error('User search failed to find Bob');
+      throw new Error('User search failed to find Bob by phone number');
     }
-    console.log('[PASS] 5. User search endpoint successfully located target user');
+    console.log('[PASS] 5. User search endpoint successfully located target user by mobile number');
 
     // 6. Create Direct Conversation between Alice and Bob
     const convRes = await fetch(`${BASE_URL}/api/conversations`, {

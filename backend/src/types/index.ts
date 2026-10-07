@@ -1,5 +1,6 @@
 export interface User {
   id: string;
+  phoneNumber?: string | null;
   email: string;
   username: string;
   passwordHash?: string;
@@ -67,6 +68,7 @@ export interface ApiResponse<T = any> {
 
 export interface AuthTokenPayload {
   userId: string;
-  email: string;
+  phoneNumber?: string | null;
+  email?: string;
   username: string;
 }

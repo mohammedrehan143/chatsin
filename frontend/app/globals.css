@@ -3,17 +3,39 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+  --wa-teal: #00a884;
+  --wa-teal-dark: #008069;
+  --wa-green-badge: #25d366;
+  --wa-bg-chat: #efeae2;
+  --wa-bg-sidebar: #ffffff;
+  --wa-bg-header: #f0f2f5;
+  --wa-bubble-out: #d9fdd3;
+  --wa-bubble-in: #ffffff;
+  --wa-text-primary: #111b21;
+  --wa-text-secondary: #667781;
+  --wa-border: #e9edef;
+  --wa-blue-ticks: #53bdeb;
 }
 
 body {
-  background-color: #030712;
-  color: #f3f4f6;
+  background-color: #d1d7db;
+  color: #111b21;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
-/* Custom modern scrollbars */
+/* WhatsApp subtle chat pattern */
+.whatsapp-chat-bg {
+  background-color: #efeae2;
+  background-image: radial-gradient(#d1c7b7 0.75px, transparent 0.75px), radial-gradient(#d1c7b7 0.75px, #efeae2 0.75px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+/* WhatsApp custom clean scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -24,10 +46,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #cbd5e1;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #94a3b8;
 }

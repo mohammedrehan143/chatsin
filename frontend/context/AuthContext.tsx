@@ -9,8 +9,8 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (data: { emailOrUsername: string; password: string }) => Promise<void>;
-  register: (data: { email: string; username: string; password: string }) => Promise<void>;
+  login: (data: { phoneNumber?: string; identifier?: string; emailOrUsername?: string; password: string }) => Promise<void>;
+  register: (data: { phoneNumber?: string; email?: string; username: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updated: Partial<User>) => void;
 }
@@ -23,35 +23,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function initAuth() {
-      const storedToken = localStorage.getItem('chat_token');
-      if (storedToken) {
-        setToken(storedToken);
-        try {
-          const res = await api.getMe();
-          setUser(res.user);
-        } catch (err) {
-          console.warn('Session expired or invalid, logging out', err);
-          api.clearToken();
-          setToken(null);
-          setUser(null);
-        }
+    // 1. Immediately hydrate from persistent local storage so info is never forgotten
+    const storedToken = api.getToken();
+    const storedUser = api.getSavedUser();
+
+    if (storedToken) {
+      setToken(storedToken);
+      if (storedUser) {
+        setUser(storedUser);
       }
+
+      // Verify and sync latest user profile in background
+      api.getMe()
+        .then((res) => {
+          if (res?.user) {
+            setUser(res.user);
+            api.setSavedUser(res.user);
+          }
+        })
+        .catch((err) => {
+          console.warn('[Auth] Background session check warning:', err.message);
+          // Only clear if server explicitly returned 401 Unauthorized
+          if (err.message.includes('401') || err.message.includes('expired') || err.message.includes('UNAUTHORIZED')) {
+            api.clearSession();
+            setToken(null);
+            setUser(null);
+          }
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
       setLoading(false);
     }
-    initAuth();
   }, []);
 
-  const login = async (credentials: { emailOrUsername: string; password: string }) => {
+  const login = async (credentials: { phoneNumber?: string; identifier?: string; emailOrUsername?: string; password: string }) => {
     const res = await api.login(credentials);
-    api.setToken(res.token);
     setToken(res.token);
     setUser(res.user);
   };
 
-  const register = async (credentials: { email: string; username: string; password: string }) => {
+  const register = async (credentials: { phoneNumber?: string; email?: string; username: string; password: string }) => {
     const res = await api.register(credentials);
-    api.setToken(res.token);
     setToken(res.token);
     setUser(res.user);
   };
@@ -63,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.warn('Logout error', err);
     } finally {
       disconnectSocket();
-      api.clearToken();
+      api.clearSession();
       setUser(null);
       setToken(null);
     }
@@ -71,7 +85,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateUser = (updated: Partial<User>) => {
     if (user) {
-      setUser({ ...user, ...updated });
+      const merged = { ...user, ...updated };
+      setUser(merged);
+      api.setSavedUser(merged);
     }
   };
 
