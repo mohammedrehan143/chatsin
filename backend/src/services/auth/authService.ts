@@ -16,11 +16,13 @@ export class AuthService {
   async register(data: {
     phoneNumber?: string;
     email?: string;
-    username: string;
-    password: string;
+    username?: string;
+    password?: string;
   }): Promise<{ user: Omit<User, 'passwordHash'>; token: string }> {
     const rawPhone = data.phoneNumber?.trim();
     const cleanPhone = rawPhone ? rawPhone.replace(/[^0-9+]/g, '') : undefined;
+    const username = (data.username || (cleanPhone ? `user_${cleanPhone.replace(/[^0-9]/g, '').slice(-4)}` : `user_${Date.now()}`)).trim();
+    const password = data.password || 'Password123!';
 
     // Check existing phone number if provided
     if (cleanPhone) {

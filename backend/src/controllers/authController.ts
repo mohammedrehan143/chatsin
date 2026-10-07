@@ -28,7 +28,12 @@ export class AuthController {
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const validated = registerSchema.parse(req.body);
-      const result = await authService.register(validated);
+      const result = await authService.register({
+        phoneNumber: validated.phoneNumber,
+        email: validated.email,
+        username: validated.username,
+        password: validated.password
+      });
       sendSuccess(res, result, 201);
     } catch (error) {
       next(error);
