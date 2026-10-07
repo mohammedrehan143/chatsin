@@ -7,6 +7,17 @@ import { ChatProvider } from '../context/ChatContext';
 export const metadata: Metadata = {
   title: 'Chatsin | Real-Time Messaging',
   description: 'Production real-time messaging application with mobile authentication.',
+  manifest: '/manifest.json',
+  icons: {
+    icon: '/icon.svg',
+    apple: '/icon.svg',
+  },
+};
+
+export const viewport = {
+  themeColor: '#09090b',
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({

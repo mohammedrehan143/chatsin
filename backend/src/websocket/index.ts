@@ -33,16 +33,16 @@ export function broadcastMessage(conversationId: string, message: any, sender: a
       sender
     }
   };
-  ioInstance.to(`conversation:${conversationId}`).emit('new_message', payload);
   conversationRepository.getMembers(conversationId).then(members => {
-    for (const m of members) {
-      ioInstance!.to(`user:${m.userId}`).emit('new_message', payload);
-      ioInstance!.to(`user:${m.userId}`).emit('conversation_updated', {
-        conversationId,
-        lastMessage: message
-      });
-    }
-  }).catch(() => {});
+    const targetRooms = Array.from(new Set([`conversation:${conversationId}`, ...members.map(m => `user:${m.userId}`)]));
+    ioInstance!.to(targetRooms).emit('new_message', payload);
+    ioInstance!.to(targetRooms).emit('conversation_updated', {
+      conversationId,
+      lastMessage: message
+    });
+  }).catch(() => {
+    ioInstance!.to(`conversation:${conversationId}`).emit('new_message', payload);
+  });
 }
 
 export function initializeWebSocket(httpServer: HttpServer): Server {
@@ -142,21 +142,15 @@ export function initializeWebSocket(httpServer: HttpServer): Server {
           clientTempId
         };
 
-        // Deliver message to conversation room
-        io.to(`conversation:${conversationId}`).emit('new_message', messagePayload);
-
-        // Also push to each member's personal user room so their dashboard updates instantly even if not in conversation room
+        // Deliver message to conversation members once across their active rooms
         const members = await conversationRepository.getMembers(conversationId);
-        for (const member of members) {
-          io.to(`user:${member.userId}`).emit('new_message', {
-            ...messagePayload,
-            clientTempId: member.userId === userId ? clientTempId : undefined
-          });
-          io.to(`user:${member.userId}`).emit('conversation_updated', {
-            conversationId,
-            lastMessage: message
-          });
-        }
+        const targetRooms = Array.from(new Set([`conversation:${conversationId}`, ...members.map(m => `user:${m.userId}`)]));
+
+        io.to(targetRooms).emit('new_message', messagePayload);
+        io.to(targetRooms).emit('conversation_updated', {
+          conversationId,
+          lastMessage: message
+        });
       } catch (err: any) {
         socket.emit('error', { message: err.message, code: err.code || 'SEND_ERROR' });
       }

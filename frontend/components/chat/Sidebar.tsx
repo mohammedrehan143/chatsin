@@ -4,18 +4,25 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { Avatar } from '../ui/Avatar';
-import { LogOut, Plus, MessageSquare, Search } from 'lucide-react';
+import { LogOut, Plus, MessageSquare, Search, Download } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface SidebarProps {
   onOpenSearch: () => void;
   onOpenProfile: () => void;
+  onOpenDownload?: () => void;
 }
 
-export function Sidebar({ onOpenSearch, onOpenProfile }: SidebarProps) {
+export function Sidebar({ onOpenSearch, onOpenProfile, onOpenDownload }: SidebarProps) {
   const { user, logout } = useAuth();
   const { conversations, activeConversation, selectConversation, loadingConversations } = useChat();
   const [filterQuery, setFilterQuery] = React.useState('');
+  const [showDownloadBanner, setShowDownloadBanner] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('chatsin_hide_download_banner') !== 'true';
+    }
+    return true;
+  });
 
   const filteredConversations = React.useMemo(() => {
     if (!filterQuery.trim()) return conversations;
@@ -52,17 +59,26 @@ export function Sidebar({ onOpenSearch, onOpenProfile }: SidebarProps) {
         </div>
 
         <div className="flex items-center gap-1 text-[#71717a]">
+          {onOpenDownload && (
+            <button
+              onClick={onOpenDownload}
+              title="Download Chrome & Desktop App"
+              className="p-2 hover:bg-[#f4f4f5] rounded-full transition-colors text-[#09090b] hover:text-black cursor-pointer"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+          )}
           <button
             onClick={onOpenSearch}
             title="Contacts / New Chat"
-            className="p-2 hover:bg-[#f4f4f5] rounded-full transition-colors hover:text-black"
+            className="p-2 hover:bg-[#f4f4f5] rounded-full transition-colors hover:text-black cursor-pointer"
           >
             <Plus className="w-5 h-5" />
           </button>
           <button
             onClick={logout}
             title="Log out"
-            className="p-2 hover:bg-[#f4f4f5] hover:text-red-600 rounded-full transition-colors"
+            className="p-2 hover:bg-[#f4f4f5] hover:text-red-600 rounded-full transition-colors cursor-pointer"
           >
             <LogOut className="w-5 h-5" />
           </button>
@@ -99,6 +115,41 @@ export function Sidebar({ onOpenSearch, onOpenProfile }: SidebarProps) {
           </button>
         )}
       </div>
+
+      {/* Download App Prompt Banner */}
+      {showDownloadBanner && onOpenDownload && (
+        <div className="px-3.5 py-2.5 bg-[#f4f4f5] border-b border-[#e4e4e7] flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5 min-w-0 cursor-pointer" onClick={onOpenDownload}>
+            <div className="w-7 h-7 rounded-lg bg-[#09090b] text-white flex items-center justify-center shrink-0 shadow-2xs">
+              <Download className="w-3.5 h-3.5 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-bold text-[#09090b] text-[11px] truncate">Get Chatsin for Windows & Chrome</p>
+              <p className="text-[10px] text-[#71717a] truncate">Faster messaging & background alerts</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={onOpenDownload}
+              className="px-2.5 py-1 bg-[#09090b] text-white hover:bg-[#27272a] rounded-lg text-[10px] font-bold shadow-2xs transition-colors cursor-pointer"
+            >
+              Get App
+            </button>
+            <button
+              onClick={() => {
+                setShowDownloadBanner(false);
+                try {
+                  localStorage.setItem('chatsin_hide_download_banner', 'true');
+                } catch {}
+              }}
+              title="Dismiss banner"
+              className="p-1 text-[#71717a] hover:text-[#09090b] rounded text-xs font-bold leading-none cursor-pointer"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Chatsin Conversation List */}
       <div className="flex-1 overflow-y-auto divide-y divide-[#f4f4f5]">

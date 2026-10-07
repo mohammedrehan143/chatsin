@@ -5,16 +5,17 @@ import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { Avatar } from '../ui/Avatar';
 import { api } from '../../lib/api';
-import { X, Phone, Mail, Calendar, Edit3, Check, ShieldCheck } from 'lucide-react';
+import { X, Phone, Mail, Calendar, Edit3, Check, ShieldCheck, Download } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface UserProfilePanelProps {
   isOpen: boolean;
   onClose: () => void;
   targetUserOverride?: any;
+  onOpenDownload?: () => void;
 }
 
-export function UserProfilePanel({ isOpen, onClose, targetUserOverride }: UserProfilePanelProps) {
+export function UserProfilePanel({ isOpen, onClose, targetUserOverride, onOpenDownload }: UserProfilePanelProps) {
   const { user: currentUser, updateUser } = useAuth();
   const { activeConversation } = useChat();
   const [isEditingBio, setIsEditingBio] = useState(false);
@@ -147,6 +148,27 @@ export function UserProfilePanel({ isOpen, onClose, targetUserOverride }: UserPr
               <span className="text-xs text-[#52525b] truncate">{displayUser.email}</span>
             </div>
           </div>
+        )}
+        {/* Download App Option */}
+        {onOpenDownload && (
+          <button
+            onClick={() => {
+              onClose();
+              onOpenDownload();
+            }}
+            className="w-full bg-[#f4f4f5] hover:bg-[#e4e4e7] rounded-2xl p-4 shadow-xs border border-[#e4e4e7] flex items-center justify-between text-left transition-colors cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-[#09090b] text-white flex items-center justify-center shrink-0">
+                <Download className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-[#09090b]">Download Chatsin App</p>
+                <p className="text-[11px] text-[#71717a]">Chrome Extension & Desktop Launcher</p>
+              </div>
+            </div>
+            <span className="text-xs text-[#09090b] font-bold">Install →</span>
+          </button>
         )}
 
         {/* Security & Join Date */}

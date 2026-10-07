@@ -66,6 +66,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const activeConvRef = useRef<Conversation | null>(null);
+  const processedMessageIdsRef = useRef<Set<string>>(new Set());
 
   // Sync ref for socket listeners
   useEffect(() => {
@@ -141,12 +142,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       // Update message list if in active conversation
       if (currentActive && currentActive.id === message.conversationId) {
         setMessages(prev => {
-          // Replace optimistic message if matching clientTempId
-          if (clientTempId) {
-            const filtered = prev.filter(m => m.clientTempId !== clientTempId);
-            return [...filtered, message];
+          // 1. If permanent message ID is already present, do not duplicate
+          if (prev.some(m => m.id === message.id)) {
+            return prev;
           }
-          if (prev.some(m => m.id === message.id)) return prev;
+          // 2. If optimistic message with clientTempId exists, replace it in-place
+          if (clientTempId && prev.some(m => m.clientTempId === clientTempId)) {
+            return prev.map(m => (m.clientTempId === clientTempId ? message : m));
+          }
+          // 3. Otherwise append new incoming message
           return [...prev, message];
         });
 
@@ -156,8 +160,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Audio notification and tab title badge when someone sends a message
-      if (message.senderId !== user.id) {
+      // Audio notification and tab title badge when someone sends a message (once per unique message ID)
+      if (message.senderId !== user.id && !processedMessageIdsRef.current.has(message.id)) {
+        processedMessageIdsRef.current.add(message.id);
+        if (processedMessageIdsRef.current.size > 300) {
+          const first = processedMessageIdsRef.current.values().next().value;
+          if (first) processedMessageIdsRef.current.delete(first);
+        }
         playNotificationSound();
         notifyDocumentTitle(message.sender?.username || 'Contact');
       }

@@ -8,6 +8,7 @@ export function MessageInput() {
   const [content, setContent] = useState('');
   const { sendMessage, sendTyping } = useChat();
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isSendingRef = useRef(false);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setContent(e.target.value);
@@ -24,7 +25,9 @@ export function MessageInput() {
 
   const handleSend = async () => {
     const trimmed = content.trim();
-    if (!trimmed) return;
+    if (!trimmed || isSendingRef.current) return;
+
+    isSendingRef.current = true;
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
@@ -32,7 +35,15 @@ export function MessageInput() {
     sendTyping(false);
 
     setContent('');
-    await sendMessage(trimmed);
+
+    try {
+      await sendMessage(trimmed);
+    } finally {
+      // Short cooldown to prevent double execution on rapid Enter / clicks
+      setTimeout(() => {
+        isSendingRef.current = false;
+      }, 150);
+    }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
