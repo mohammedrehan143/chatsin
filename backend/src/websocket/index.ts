@@ -13,6 +13,38 @@ interface AuthenticatedSocket extends Socket {
   user?: Omit<User, 'passwordHash'>;
 }
 
+let ioInstance: Server | null = null;
+
+export function getIO(): Server | null {
+  return ioInstance;
+}
+
+export function notifyNewConversation(recipientId: string, conversation: any): void {
+  if (ioInstance) {
+    ioInstance.to(`user:${recipientId}`).emit('new_conversation', conversation);
+  }
+}
+
+export function broadcastMessage(conversationId: string, message: any, sender: any): void {
+  if (!ioInstance) return;
+  const payload = {
+    message: {
+      ...message,
+      sender
+    }
+  };
+  ioInstance.to(`conversation:${conversationId}`).emit('new_message', payload);
+  conversationRepository.getMembers(conversationId).then(members => {
+    for (const m of members) {
+      ioInstance!.to(`user:${m.userId}`).emit('new_message', payload);
+      ioInstance!.to(`user:${m.userId}`).emit('conversation_updated', {
+        conversationId,
+        lastMessage: message
+      });
+    }
+  }).catch(() => {});
+}
+
 export function initializeWebSocket(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
     cors: {
@@ -34,6 +66,8 @@ export function initializeWebSocket(httpServer: HttpServer): Server {
     },
     transports: ['websocket', 'polling']
   });
+
+  ioInstance = io;
 
   // 1. Authenticate WebSocket Connection Handshake
   io.use(async (socket: AuthenticatedSocket, next) => {
@@ -100,18 +134,24 @@ export function initializeWebSocket(httpServer: HttpServer): Server {
         const { conversationId, content, clientTempId } = data;
         const message = await chatService.sendMessage(userId, conversationId, content);
 
-        // Deliver message to everyone in the conversation room
-        io.to(`conversation:${conversationId}`).emit('new_message', {
+        const messagePayload = {
           message: {
             ...message,
             sender: user
           },
           clientTempId
-        });
+        };
 
-        // Also push conversation update to all members
+        // Deliver message to conversation room
+        io.to(`conversation:${conversationId}`).emit('new_message', messagePayload);
+
+        // Also push to each member's personal user room so their dashboard updates instantly even if not in conversation room
         const members = await conversationRepository.getMembers(conversationId);
         for (const member of members) {
+          io.to(`user:${member.userId}`).emit('new_message', {
+            ...messagePayload,
+            clientTempId: member.userId === userId ? clientTempId : undefined
+          });
           io.to(`user:${member.userId}`).emit('conversation_updated', {
             conversationId,
             lastMessage: message

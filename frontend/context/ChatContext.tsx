@@ -20,6 +20,41 @@ interface ChatContextType {
   refreshConversations: () => Promise<void>;
 }
 
+function playNotificationSound() {
+  if (typeof window === 'undefined') return;
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(659.25, ctx.currentTime);
+    osc.frequency.setValueAtTime(880.0, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+  } catch {
+    // Autoplay policy or unavailable audio context
+  }
+}
+
+function notifyDocumentTitle(senderName: string) {
+  if (typeof document === 'undefined') return;
+  const original = 'Chatsin | WhatsApp Web';
+  document.title = `💬 (1) ${senderName}: New message`;
+  const clear = () => {
+    document.title = original;
+    window.removeEventListener('focus', clear);
+    window.removeEventListener('click', clear);
+  };
+  window.addEventListener('focus', clear);
+  window.addEventListener('click', clear);
+}
+
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
@@ -121,6 +156,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      // Audio notification and tab title badge when someone sends a message
+      if (message.senderId !== user.id) {
+        playNotificationSound();
+        notifyDocumentTitle(message.sender?.username || 'Contact');
+      }
+
       // Update conversations list preview & unread counts
       setConversations(prev => {
         const found = prev.find(c => c.id === message.conversationId);
@@ -201,7 +242,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    const handleConversationUpdated = () => {
+      refreshConversations();
+    };
+
     socket.on('new_message', handleNewMessage);
+    socket.on('new_conversation', handleConversationUpdated);
+    socket.on('conversation_updated', handleConversationUpdated);
     socket.on('user_status_changed', handleUserStatus);
     socket.on('user_typing', handleUserTyping);
     socket.on('user_stopped_typing', handleUserStoppedTyping);
@@ -209,6 +256,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     return () => {
       socket.off('new_message', handleNewMessage);
+      socket.off('new_conversation', handleConversationUpdated);
+      socket.off('conversation_updated', handleConversationUpdated);
       socket.off('user_status_changed', handleUserStatus);
       socket.off('user_typing', handleUserTyping);
       socket.off('user_stopped_typing', handleUserStoppedTyping);

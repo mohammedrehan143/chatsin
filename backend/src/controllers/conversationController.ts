@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { chatService } from '../services/chat/chatService';
 import { sendSuccess } from '../utils/response';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { notifyNewConversation, broadcastMessage } from '../websocket';
 import { z } from 'zod';
 
 const createConversationSchema = z.object({
@@ -28,6 +29,7 @@ export class ConversationController {
       const userId = req.user!.id;
       const { recipientId } = createConversationSchema.parse(req.body);
       const conversation = await chatService.getOrCreateDirectConversation(userId, recipientId);
+      notifyNewConversation(recipientId, conversation);
       sendSuccess(res, conversation, 201);
     } catch (error) {
       next(error);
@@ -55,6 +57,7 @@ export class ConversationController {
       const { content } = sendMessageSchema.parse(req.body);
 
       const message = await chatService.sendMessage(userId, conversationId, content);
+      broadcastMessage(conversationId, message, req.user);
       sendSuccess(res, message, 201);
     } catch (error) {
       next(error);

@@ -11,7 +11,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",
-    "test:e2e": "ts-node src/scripts/verify-e2e.ts"
+    "test:e2e": "ts-node --transpile-only src/scripts/verify-e2e.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
