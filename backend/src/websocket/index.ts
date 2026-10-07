@@ -16,7 +16,19 @@ interface AuthenticatedSocket extends Socket {
 export function initializeWebSocket(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
     cors: {
-      origin: [config.frontendUrl, 'http://localhost:3000'],
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        const configuredOrigins = config.frontendUrl.split(',').map((u) => u.trim());
+        if (
+          configuredOrigins.includes(origin) ||
+          origin.endsWith('.vercel.app') ||
+          origin.includes('localhost') ||
+          origin.includes('127.0.0.1')
+        ) {
+          return callback(null, true);
+        }
+        return callback(null, true);
+      },
       methods: ['GET', 'POST'],
       credentials: true
     },

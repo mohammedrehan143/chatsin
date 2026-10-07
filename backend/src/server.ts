@@ -17,7 +17,19 @@ export function createApp(): { app: Express; server: http.Server } {
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(
     cors({
-      origin: [config.frontendUrl, 'http://localhost:3000'],
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        const configuredOrigins = config.frontendUrl.split(',').map((u) => u.trim());
+        if (
+          configuredOrigins.includes(origin) ||
+          origin.endsWith('.vercel.app') ||
+          origin.includes('localhost') ||
+          origin.includes('127.0.0.1')
+        ) {
+          return callback(null, true);
+        }
+        return callback(null, true);
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization']
@@ -58,10 +70,10 @@ async function startServer() {
   // Attempt database connectivity
   await checkDatabaseConnection();
 
-  server.listen(config.port, () => {
+  server.listen(config.port, '0.0.0.0', () => {
     console.log(`=======================================================`);
-    console.log(`🚀 Chat Backend Server running on http://localhost:${config.port}`);
-    console.log(`📡 WebSocket ready on ws://localhost:${config.port}`);
+    console.log(`🚀 Chat Backend Server running on port ${config.port}`);
+    console.log(`📡 WebSocket ready on port ${config.port}`);
     console.log(`🛡️ CORS configured for origin: ${config.frontendUrl}`);
     console.log(`=======================================================`);
   });
