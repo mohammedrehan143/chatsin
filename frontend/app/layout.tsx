@@ -5,8 +5,8 @@ import { AuthProvider } from '../context/AuthContext';
 import { ChatProvider } from '../context/ChatContext';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Web | Real-Time Messaging',
-  description: 'Production real-time WhatsApp-style messaging application with mobile number authentication.',
+  title: 'Chatsin | Real-Time Messaging',
+  description: 'Production real-time messaging application with mobile authentication.',
 };
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="light">
-      <body className="h-screen w-screen overflow-hidden bg-[#d1d7db] text-[#111b21] antialiased">
+      <body className="h-screen w-screen overflow-hidden bg-[#f4f4f5] text-[#09090b] antialiased">
         <AuthProvider>
           <ChatProvider>
             {children}

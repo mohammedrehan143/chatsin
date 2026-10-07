@@ -4,41 +4,46 @@
 
 :root {
   color-scheme: light;
-  --wa-teal: #00a884;
-  --wa-teal-dark: #008069;
-  --wa-green-badge: #25d366;
-  --wa-bg-chat: #efeae2;
-  --wa-bg-sidebar: #ffffff;
-  --wa-bg-header: #f0f2f5;
-  --wa-bubble-out: #d9fdd3;
-  --wa-bubble-in: #ffffff;
-  --wa-text-primary: #111b21;
-  --wa-text-secondary: #667781;
-  --wa-border: #e9edef;
-  --wa-blue-ticks: #53bdeb;
+  --theme-primary: #09090b;
+  --theme-primary-hover: #18181b;
+  --theme-accent: #27272a;
+  --theme-bg-main: #f4f4f5;
+  --theme-bg-sidebar: #ffffff;
+  --theme-bg-header: #ffffff;
+  --theme-bg-chat: #fafafa;
+  --theme-bubble-out: #09090b;
+  --theme-bubble-out-text: #ffffff;
+  --theme-bubble-in: #ffffff;
+  --theme-bubble-in-text: #09090b;
+  --theme-text-primary: #09090b;
+  --theme-text-secondary: #71717a;
+  --theme-border: #e4e4e7;
+  --theme-border-subtle: #f4f4f5;
+  --theme-badge: #09090b;
+  --theme-online: #10b981;
 }
 
 body {
-  background-color: #d1d7db;
-  color: #111b21;
+  background-color: #f4f4f5;
+  color: #09090b;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   overflow: hidden;
   margin: 0;
   padding: 0;
 }
 
-/* WhatsApp subtle chat pattern */
-.whatsapp-chat-bg {
-  background-color: #efeae2;
-  background-image: radial-gradient(#d1c7b7 0.75px, transparent 0.75px), radial-gradient(#d1c7b7 0.75px, #efeae2 0.75px);
-  background-size: 30px 30px;
-  background-position: 0 0, 15px 15px;
+/* Chatsin clean subtle canvas dot matrix */
+.chatsin-chat-bg {
+  background-color: #fafafa;
+  background-image: radial-gradient(#e4e4e7 1px, transparent 1px), radial-gradient(#e4e4e7 1px, #fafafa 1px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
 }
 
-/* WhatsApp custom clean scrollbars */
+/* Chatsin custom sleek scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -46,10 +51,57 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d4d4d8;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #a1a1aa;
+}
+
+/* Entrance Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splashGlow {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.25);
+  }
+}
+
+@keyframes progressLine {
+  0% {
+    width: 0%;
+  }
+  50% {
+    width: 70%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-splash-glow {
+  animation: splashGlow 2s ease-in-out infinite;
+}
+
+.animate-progress-line {
+  animation: progressLine 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }

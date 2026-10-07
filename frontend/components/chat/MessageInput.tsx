@@ -51,7 +51,7 @@ export function MessageInput() {
   }, []);
 
   return (
-    <div className="px-4 py-2.5 bg-[#f0f2f5] border-t border-[#e9edef] shrink-0">
+    <div className="px-4 py-3 bg-white border-t border-[#e4e4e7] shrink-0">
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -62,14 +62,14 @@ export function MessageInput() {
         <button
           type="button"
           title="Emojis"
-          className="p-1.5 text-[#54656f] hover:text-[#111b21] transition-colors rounded-full"
+          className="p-2 text-[#71717a] hover:text-[#09090b] hover:bg-[#f4f4f5] transition-colors rounded-full"
         >
           <Smile className="w-5 h-5" />
         </button>
         <button
           type="button"
           title="Attach"
-          className="p-1.5 text-[#54656f] hover:text-[#111b21] transition-colors rounded-full"
+          className="p-2 text-[#71717a] hover:text-[#09090b] hover:bg-[#f4f4f5] transition-colors rounded-full"
         >
           <Paperclip className="w-5 h-5" />
         </button>
@@ -79,9 +79,9 @@ export function MessageInput() {
           value={content}
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message"
+          placeholder="Type a message..."
           maxLength={4000}
-          className="flex-1 bg-white border-0 focus:ring-0 rounded-lg px-4 py-2.5 text-sm text-[#111b21] placeholder-[#8696a0] focus:outline-none transition-all shadow-xs"
+          className="flex-1 bg-[#f4f4f5] focus:bg-white border border-transparent focus:border-[#09090b] rounded-2xl px-4 py-2.5 text-sm text-[#09090b] placeholder-[#71717a] outline-none transition-all shadow-xs"
         />
 
         <button
@@ -90,8 +90,8 @@ export function MessageInput() {
           title="Send message"
           className={`p-2.5 rounded-full transition-all flex items-center justify-center shrink-0 cursor-pointer ${
             content.trim()
-              ? 'bg-[#00a884] hover:bg-[#008069] text-white shadow-sm'
-              : 'text-[#8696a0] hover:text-[#54656f] opacity-50 cursor-not-allowed'
+              ? 'bg-[#09090b] hover:bg-[#27272a] text-white shadow-md active:scale-95'
+              : 'text-[#a1a1aa] bg-[#f4f4f5] opacity-60 cursor-not-allowed'
           }`}
         >
           <SendHorizonal className="w-5 h-5" />

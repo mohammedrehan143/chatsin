@@ -44,7 +44,7 @@ function playNotificationSound() {
 
 function notifyDocumentTitle(senderName: string) {
   if (typeof document === 'undefined') return;
-  const original = 'Chatsin | WhatsApp Web';
+  const original = 'Chatsin | Real-Time Messaging';
   document.title = `💬 (1) ${senderName}: New message`;
   const clear = () => {
     document.title = original;
