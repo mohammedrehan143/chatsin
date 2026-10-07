@@ -10,6 +10,7 @@ export interface IConversationRepository {
   createDirect(userAId: string, userBId: string): Promise<Conversation>;
   isMember(conversationId: string, userId: string): Promise<boolean>;
   getMembers(conversationId: string): Promise<ConversationMember[]>;
+  deleteForUser(conversationId: string, userId: string): Promise<void>;
 }
 
 export class ConversationRepository implements IConversationRepository {
@@ -236,6 +237,41 @@ export class ConversationRepository implements IConversationRepository {
         ...m,
         user: memoryStore.users.get(m.userId)
       }));
+  }
+  async deleteForUser(conversationId: string, userId: string): Promise<void> {
+    if (isDatabaseConnected()) {
+      try {
+        // Remove this user's membership
+        await getPrismaClient().conversationMember.deleteMany({
+          where: { conversationId, userId }
+        });
+        // If no members left, delete the conversation + its messages
+        const remaining = await getPrismaClient().conversationMember.count({
+          where: { conversationId }
+        });
+        if (remaining === 0) {
+          await getPrismaClient().message.deleteMany({ where: { conversationId } });
+          await getPrismaClient().conversation.delete({ where: { id: conversationId } });
+        }
+        return;
+      } catch (err) {
+        console.warn('[ConversationRepository] Prisma deleteForUser error', err);
+      }
+    }
+
+    // Memory store fallback
+    const idx = memoryStore.conversationMembers.findIndex(
+      m => m.conversationId === conversationId && m.userId === userId
+    );
+    if (idx !== -1) memoryStore.conversationMembers.splice(idx, 1);
+
+    const remaining = memoryStore.conversationMembers.filter(m => m.conversationId === conversationId);
+    if (remaining.length === 0) {
+      memoryStore.conversations.delete(conversationId);
+      for (const [msgId, msg] of memoryStore.messages.entries()) {
+        if (msg.conversationId === conversationId) memoryStore.messages.delete(msgId);
+      }
+    }
   }
 }
 

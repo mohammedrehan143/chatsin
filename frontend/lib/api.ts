@@ -149,6 +149,12 @@ class ApiClient {
       method: 'POST',
     });
   }
+
+  async deleteConversation(conversationId: string) {
+    return this.request<{ deleted: boolean }>(`/api/conversations/${conversationId}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const api = new ApiClient();

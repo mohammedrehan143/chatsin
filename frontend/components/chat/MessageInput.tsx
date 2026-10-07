@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { SendHorizonal, Smile, Paperclip } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 
@@ -39,17 +39,10 @@ export function MessageInput() {
     try {
       await sendMessage(trimmed);
     } finally {
-      // Short cooldown to prevent double execution on rapid Enter / clicks
+      // Cooldown to prevent any rapid double execution
       setTimeout(() => {
         isSendingRef.current = false;
-      }, 150);
-    }
-  };
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+      }, 200);
     }
   };
 
@@ -89,7 +82,6 @@ export function MessageInput() {
           type="text"
           value={content}
           onChange={handleTextChange}
-          onKeyDown={handleKeyDown}
           placeholder="Type a message..."
           maxLength={4000}
           className="flex-1 bg-[#f4f4f5] focus:bg-white border border-transparent focus:border-[#09090b] rounded-2xl px-4 py-2.5 text-sm text-[#09090b] placeholder-[#71717a] outline-none transition-all shadow-xs"

@@ -123,6 +123,13 @@ export class ChatService {
 
     return readMessageIds;
   }
+  async deleteConversation(conversationId: string, userId: string): Promise<void> {
+    const isMember = await this.convRepo.isMember(conversationId, userId);
+    if (!isMember) {
+      throw new AppError('You are not a member of this conversation', 403, 'FORBIDDEN');
+    }
+    await this.convRepo.deleteForUser(conversationId, userId);
+  }
 }
 
 export const chatService = new ChatService();

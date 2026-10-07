@@ -4,7 +4,7 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { Avatar } from '../ui/Avatar';
-import { LogOut, Plus, MessageSquare, Search, Download } from 'lucide-react';
+import { LogOut, Plus, MessageSquare, Search, Download, Trash2, MoreVertical, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface SidebarProps {
@@ -13,9 +13,16 @@ interface SidebarProps {
   onOpenDownload?: () => void;
 }
 
+interface ContextMenu {
+  convId: string;
+  convName: string;
+  x: number;
+  y: number;
+}
+
 export function Sidebar({ onOpenSearch, onOpenProfile, onOpenDownload }: SidebarProps) {
   const { user, logout } = useAuth();
-  const { conversations, activeConversation, selectConversation, loadingConversations } = useChat();
+  const { conversations, activeConversation, selectConversation, loadingConversations, deleteConversation } = useChat();
   const [filterQuery, setFilterQuery] = React.useState('');
   const [showDownloadBanner, setShowDownloadBanner] = React.useState(() => {
     if (typeof window !== 'undefined') {
@@ -23,6 +30,24 @@ export function Sidebar({ onOpenSearch, onOpenProfile, onOpenDownload }: Sidebar
     }
     return true;
   });
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = React.useState<ContextMenu | null>(null);
+  const [confirmDelete, setConfirmDelete] = React.useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+
+  // Close context menu on outside click
+  React.useEffect(() => {
+    if (!contextMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [contextMenu]);
 
   const filteredConversations = React.useMemo(() => {
     if (!filterQuery.trim()) return conversations;
@@ -35,8 +60,34 @@ export function Sidebar({ onOpenSearch, onOpenProfile, onOpenDownload }: Sidebar
     );
   }, [conversations, filterQuery]);
 
+  const handleContextMenu = (e: React.MouseEvent, convId: string, convName: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const sidebarRect = (e.currentTarget as HTMLElement).closest('aside')?.getBoundingClientRect();
+    const x = sidebarRect ? e.clientX - sidebarRect.left : e.clientX;
+    const y = sidebarRect ? e.clientY - sidebarRect.top : e.clientY;
+    setContextMenu({ convId, convName, x, y });
+  };
+
+  const handleDeleteClick = () => {
+    if (!contextMenu) return;
+    setConfirmDelete({ id: contextMenu.convId, name: contextMenu.convName });
+    setContextMenu(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try {
+      await deleteConversation(confirmDelete.id);
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(null);
+    }
+  };
+
   return (
-    <aside className="w-full md:w-80 lg:w-[410px] flex flex-col h-full bg-white border-r border-[#e4e4e7] text-[#09090b] select-none">
+    <aside className="w-full md:w-80 lg:w-[410px] flex flex-col h-full bg-white border-r border-[#e4e4e7] text-[#09090b] select-none relative">
       {/* Chatsin Top Bar */}
       <div className="h-16 px-4 bg-white border-b border-[#e4e4e7] flex items-center justify-between shrink-0">
         <div
@@ -183,12 +234,14 @@ export function Sidebar({ onOpenSearch, onOpenProfile, onOpenDownload }: Sidebar
             const isActive = activeConversation?.id === conv.id;
             const partner = conv.participant;
             const isOnline = partner?.isOnline;
+            const convName = partner?.username || partner?.phoneNumber || 'Contact';
 
             return (
               <div
                 key={conv.id}
                 onClick={() => selectConversation(conv)}
-                className={`px-3 py-3 flex items-center gap-3 cursor-pointer transition-all ${
+                onContextMenu={(e) => handleContextMenu(e, conv.id, convName)}
+                className={`px-3 py-3 flex items-center gap-3 cursor-pointer transition-all group relative ${
                   isActive
                     ? 'bg-[#f4f4f5] border-l-4 border-[#09090b]'
                     : 'hover:bg-[#fafafa] bg-white border-l-4 border-transparent'
@@ -204,13 +257,23 @@ export function Sidebar({ onOpenSearch, onOpenProfile, onOpenDownload }: Sidebar
                 <div className="flex-1 min-w-0 border-b border-[#f4f4f5] pb-1">
                   <div className="flex items-center justify-between mb-1">
                     <h3 className="text-sm font-semibold text-[#09090b] truncate">
-                      {partner?.username || partner?.phoneNumber || 'Contact'}
+                      {convName}
                     </h3>
-                    {conv.lastMessage && (
-                      <span className={`text-[11px] shrink-0 ${conv.unreadCount > 0 ? 'text-[#09090b] font-bold' : 'text-[#71717a]'}`}>
-                        {formatDistanceToNow(new Date(conv.lastMessage.createdAt), { addSuffix: false })}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {conv.lastMessage && (
+                        <span className={`text-[11px] ${conv.unreadCount > 0 ? 'text-[#09090b] font-bold' : 'text-[#71717a]'}`}>
+                          {formatDistanceToNow(new Date(conv.lastMessage.createdAt), { addSuffix: false })}
+                        </span>
+                      )}
+                      {/* Hover more button */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleContextMenu(e, conv.id, convName); }}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[#e4e4e7] transition-all ml-1 cursor-pointer"
+                        title="More options"
+                      >
+                        <MoreVertical className="w-3.5 h-3.5 text-[#71717a]" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -229,6 +292,83 @@ export function Sidebar({ onOpenSearch, onOpenProfile, onOpenDownload }: Sidebar
           })
         )}
       </div>
+
+      {/* Right-click Context Menu */}
+      {contextMenu && (
+        <div
+          ref={menuRef}
+          className="absolute z-50 bg-white border border-[#e4e4e7] rounded-xl shadow-xl py-1 min-w-[160px] overflow-hidden"
+          style={{
+            left: Math.min(contextMenu.x, 320),
+            top: Math.min(contextMenu.y, window.innerHeight - 80),
+          }}
+        >
+          <button
+            onClick={handleDeleteClick}
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4 shrink-0" />
+            <span className="font-medium">Delete Chat</span>
+          </button>
+        </div>
+      )}
+
+      {/* Delete Confirm Modal */}
+      {confirmDelete && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]"
+          onClick={(e) => { if (e.target === e.currentTarget) setConfirmDelete(null); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl border border-[#e4e4e7] w-72 overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center">
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                </div>
+                <h3 className="text-sm font-bold text-[#09090b]">Delete Chat</h3>
+              </div>
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="p-1 rounded-lg hover:bg-[#f4f4f5] transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4 text-[#71717a]" />
+              </button>
+            </div>
+
+            <p className="px-5 pb-4 text-xs text-[#71717a] leading-relaxed">
+              Delete your chat with <span className="font-semibold text-[#09090b]">{confirmDelete.name}</span>?
+              This will remove it from your list. The other person can still see the conversation.
+            </p>
+
+            <div className="flex gap-2 px-5 pb-5">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 py-2 rounded-xl border border-[#e4e4e7] text-xs font-semibold text-[#09090b] hover:bg-[#f4f4f5] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+                className="flex-1 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5"
+              >
+                {deleting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

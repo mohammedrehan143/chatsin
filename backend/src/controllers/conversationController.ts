@@ -75,6 +75,16 @@ export class ConversationController {
       next(error);
     }
   }
+  async deleteConversation(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user!.id;
+      const { id: conversationId } = req.params;
+      await chatService.deleteConversation(conversationId, userId);
+      sendSuccess(res, { deleted: true }, 200);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const conversationController = new ConversationController();

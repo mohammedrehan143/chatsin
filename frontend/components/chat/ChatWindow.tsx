@@ -25,6 +25,20 @@ export function ChatWindow({ onBackMobile, onOpenProfile }: ChatWindowProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, typingUsers]);
 
+  // Strictly filter messages for the active conversation and deduplicate by ID
+  const activeMessages = React.useMemo(() => {
+    if (!activeConversation) return [];
+    const seen = new Set<string>();
+    const list: typeof messages = [];
+    for (const msg of messages) {
+      if (msg.conversationId === activeConversation.id && !seen.has(msg.id)) {
+        seen.add(msg.id);
+        list.push(msg);
+      }
+    }
+    return list;
+  }, [messages, activeConversation]);
+
   if (!activeConversation) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#fafafa] text-center select-none">
@@ -110,7 +124,7 @@ export function ChatWindow({ onBackMobile, onOpenProfile }: ChatWindowProps) {
             <div className="w-5 h-5 border-2 border-[#09090b] border-t-transparent rounded-full animate-spin" />
             <span>Loading messages...</span>
           </div>
-        ) : messages.length === 0 ? (
+        ) : activeMessages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center select-none">
             <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#71717a] mb-2 shadow-sm border border-[#e4e4e7]">
               <Avatar src={partner?.avatarUrl} alt={partner?.username || 'User'} size="lg" />
@@ -121,7 +135,7 @@ export function ChatWindow({ onBackMobile, onOpenProfile }: ChatWindowProps) {
             <p className="text-[11px] text-[#71717a] mt-1">Send a message to start the conversation!</p>
           </div>
         ) : (
-          messages.map((msg) => (
+          activeMessages.map((msg) => (
             <MessageBubble
               key={msg.id}
               message={msg}
